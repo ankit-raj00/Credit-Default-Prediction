@@ -69,7 +69,11 @@ def main():
     final_f2 = fbeta_score(y_test, y_pred_optimal, beta=2)
     report = classification_report(y_test, y_pred_optimal, output_dict=True)
     
-    logger.info(f"Final Test F2-Score: {final_f2:.4f}")
+    # Log key metrics explicitly
+    logger.info(f"Final Test Accuracy:  {report['accuracy']:.4f}")
+    logger.info(f"Final Test Precision: {report['1']['precision']:.4f}")
+    logger.info(f"Final Test Recall:    {report['1']['recall']:.4f}")
+    logger.info(f"Final Test F2-Score:  {final_f2:.4f}")
     
     # Save Metrics
     metrics = {
