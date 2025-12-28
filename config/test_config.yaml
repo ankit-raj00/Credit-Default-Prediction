@@ -1,0 +1,73 @@
+project:
+  name: "FinanceClub_CreditDefault_Prediction_TEST"
+  version: "test_1.0"
+  description: "Test Configuration for Credit Card Behaviour Score Prediction (Fast Run)"
+
+data:
+  raw_path: "data/raw/train_dataset_final1.csv"
+  processed_path: "data/processed/"
+  validation_path: "data/raw/validate_dataset_final.csv"
+  predictions_path: "results/submission_test.csv"
+  target_col: "next_month_default"
+  id_col: "Customer_ID"
+  
+  features:
+    categorical:
+      - "marriage"
+      - "sex"
+      - "education"
+      - "pay_0"
+      - "pay_2"
+      - "pay_3"
+      - "pay_4"
+      - "pay_5"
+      - "pay_6"
+    numerical:
+      - "LIMIT_BAL"
+      - "age"
+      - "Bill_amt1"
+      - "Bill_amt2"
+      - "Bill_amt3"
+      - "Bill_amt4"
+      - "Bill_amt5"
+      - "Bill_amt6"
+      - "pay_amt1"
+      - "pay_amt2"
+      - "pay_amt3"
+      - "pay_amt4"
+      - "pay_amt5"
+      - "pay_amt6"
+      - "AVG_Bill_amt"
+      - "PAY_TO_BILL_ratio"
+
+preprocessing:
+  imputation:
+    strategy: "median"
+  scaling: "standard"
+
+resampling:
+  method: "SMOTE"
+  random_state: 42
+
+model:
+  type: "xgboost"
+  # Reduced parameters for FAST execution
+  params:
+    colsample_bytree: 0.8
+    learning_rate: 0.1
+    max_depth: 3          # Reduced from 7
+    n_estimators: 10      # Reduced from 300 to 10 for speed
+    subsample: 1.0
+    scale_pos_weight: 6.38 
+    objective: "binary:logistic"
+    eval_metric: "auc"
+    use_label_encoder: false
+    random_state: 42
+
+evaluation:
+  primary_metric: "f2_score"
+  beta: 2.0
+  threshold_tuning:
+    range_start: 0.1
+    range_end: 0.9
+    step: 0.05            # Coarser step size for speed

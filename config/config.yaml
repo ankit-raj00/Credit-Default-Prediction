@@ -1,0 +1,77 @@
+project:
+  name: "FinanceClub_CreditDefault_Prediction"
+  version: "1.0.0"
+  description: "Credit Card Behaviour Score Prediction using XGBoost optimized for F2-Score"
+
+data:
+  raw_path: "data/raw/train_dataset_final1.csv"
+  processed_path: "data/processed/"
+  validation_path: "data/raw/validate_dataset_final.csv"
+  predictions_path: "results/submission.csv"
+  target_col: "next_month_default"
+  id_col: "Customer_ID"
+  
+  # Feature list extracted from notebook
+  features:
+    categorical:
+      - "marriage"
+      - "sex"
+      - "education"
+      - "pay_0"
+      - "pay_2"
+      - "pay_3"
+      - "pay_4"
+      - "pay_5"
+      - "pay_6"
+    numerical:
+      - "LIMIT_BAL"
+      - "age"
+      - "Bill_amt1"
+      - "Bill_amt2"
+      - "Bill_amt3"
+      - "Bill_amt4"
+      - "Bill_amt5"
+      - "Bill_amt6"
+      - "pay_amt1"
+      - "pay_amt2"
+      - "pay_amt3"
+      - "pay_amt4"
+      - "pay_amt5"
+      - "pay_amt6"
+      - "AVG_Bill_amt"
+      - "PAY_TO_BILL_ratio"
+
+preprocessing:
+  imputation:
+    strategy: "median" # For 'age' column
+  scaling: "standard" # StandardScaler was implied/used
+  # Note: Categorical features are integers, XGBoost can handle them, 
+  # or we might need one-hot encoding if specified further. Using raw integers for now as per notebook style.
+
+resampling:
+  method: "SMOTE"
+  random_state: 42
+  # SMOTE parameters if specified, using defaults from notebook context usually
+
+model:
+  type: "xgboost"
+  # Best parameters extracted from grid search in notebook
+  params:
+    colsample_bytree: 0.8
+    learning_rate: 0.05
+    max_depth: 7
+    n_estimators: 300
+    subsample: 1.0
+    scale_pos_weight: 6.379193758127438 # Creating balance for F2 focus
+    objective: "binary:logistic"
+    eval_metric: "auc" # and we optimize threshold for F2
+    use_label_encoder: false
+    random_state: 42
+
+evaluation:
+  primary_metric: "f2_score"
+  beta: 2.0
+  threshold_tuning:
+    range_start: 0.01
+    range_end: 1.0
+    step: 0.005
