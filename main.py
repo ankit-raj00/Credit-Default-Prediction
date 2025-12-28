@@ -5,11 +5,10 @@ import argparse
 import pandas as pd
 
 from src.utils.logger import setup_logger
-from src.utils.config_loader import load_config
-from src.data.data_loader import load_data
-from src.features.feature_engineering import create_financial_features
-from src.preprocessing.preprocessor import preprocess_data
-from src.preprocessing.resampler import apply_smote
+from src.data.loader import load_data, load_config
+from src.features.engineering import create_financial_features
+from src.features.preprocessing import preprocess_data
+from src.features.resampling import apply_smote
 from src.models.trainer import train_model
 from src.models.tuner import optimize_threshold
 from src.utils import visualize
