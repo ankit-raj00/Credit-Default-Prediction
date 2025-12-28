@@ -5,6 +5,7 @@
 > [!TIP]
 > *   **Problem Statement**: [Finclub Summer Project 2 (2025).pdf](Finclub%20Summer%20Project%202%20(2025).pdf)
 > *   **Final Report**: [Finance_club_ML_project_Report.pdf](Finance_club_ML_project_Report.pdf)
+> *   **Experimental Notebook**: [Finance_club_project (2).ipynb](notebooks/Finance_club_project%20(2).ipynb)
 
 ---
 
