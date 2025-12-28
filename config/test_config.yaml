@@ -61,7 +61,6 @@ model:
     scale_pos_weight: 6.38 
     objective: "binary:logistic"
     eval_metric: "auc"
-    use_label_encoder: false
     random_state: 42
 
 evaluation:

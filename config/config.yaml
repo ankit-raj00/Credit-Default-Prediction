@@ -65,7 +65,6 @@ model:
     scale_pos_weight: 6.379193758127438 # Creating balance for F2 focus
     objective: "binary:logistic"
     eval_metric: "auc" # and we optimize threshold for F2
-    use_label_encoder: false
     random_state: 42
 
 evaluation:

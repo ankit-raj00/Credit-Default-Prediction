@@ -79,6 +79,9 @@ def main():
     }
     
     results_dir = "results"
+    if not os.path.exists(results_dir):
+        os.makedirs(results_dir)
+
     with open(os.path.join(results_dir, "metrics.json"), "w") as f:
         json.dump(metrics, f, indent=4)
     logger.info("Metrics saved to results/metrics.json")
