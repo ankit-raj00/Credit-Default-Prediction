@@ -38,4 +38,4 @@ def optimize_threshold(model, X_val, y_val):
     
     logger.info(f"Optimization complete. Optimal Threshold: {optimal_threshold:.3f}, Max F2-Score: {max_f2_score:.4f}")
     
-    return optimal_threshold, max_f2_score
+    return optimal_threshold, max_f2_score, thresholds, f2_scores

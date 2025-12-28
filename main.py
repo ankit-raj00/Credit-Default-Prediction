@@ -1,16 +1,20 @@
-import pandas as pd
-import numpy as np
+from datetime import datetime
 import os
 import json
 import argparse
+import pandas as pd
+
 from src.utils.logger import setup_logger
-from src.data.loader import load_data, load_config
-from src.features.engineering import create_financial_features
-from src.features.preprocessing import preprocess_data
-from src.features.resampling import apply_smote
+from src.utils.config_loader import load_config
+from src.data.data_loader import load_data
+from src.features.feature_engineering import create_financial_features
+from src.preprocessing.preprocessor import preprocess_data
+from src.preprocessing.resampler import apply_smote
 from src.models.trainer import train_model
 from src.models.tuner import optimize_threshold
-from sklearn.metrics import classification_report, fbeta_score
+from src.utils import visualize
+
+from sklearn.metrics import classification_report, fbeta_score, roc_auc_score
 
 # Initialize Logger
 logger = setup_logger("main_pipeline")
@@ -26,14 +30,9 @@ def main():
     # 2. Load Configuration
     config = load_config(args.config)
     
-    # 2. Load Training Data
+    # 3. Load Training Data
     raw_path = config['data']['raw_path']
     df_train = load_data(raw_path)
-    
-    # 3. Validation Split is handled inside preprocess_data logic or we do it here?
-    # To strictly follow notebook, we:
-    # A. Feature Engineer (Entire Dataset or Split?)
-    # Notebook typically engineers on the loaded df.
     
     logger.info("--- Step 1: Feature Engineering (Training Data) ---")
     df_eng = create_financial_features(df_train)
@@ -43,8 +42,6 @@ def main():
     logger.info(f"Training Data Age Median: {age_median}")
     
     # 4. Preprocessing (Impute, Split, Scale)
-    # Note: preprocess_data internally imputes 'age' with its own median logic.
-    # We trust it for the training split generation.
     logger.info("--- Step 2: Preprocessing (Split & Scale) ---")
     X_train_scaled, X_test_scaled, y_train, y_test, scaler = preprocess_data(df_eng, config)
     
@@ -58,8 +55,8 @@ def main():
     
     # 7. Threshold Tuning (Maximize F2 on Test Split)
     logger.info("--- Step 5: Threshold Tuning (F2 Score) ---")
-    # Note: We tune on the *Test* split properties (unseen during training)
-    optimal_threshold, max_f2 = optimize_threshold(model, X_test_scaled, y_test)
+    # Using Test split (unseen)
+    optimal_threshold, max_f2, thresholds, f2_scores = optimize_threshold(model, X_test_scaled, y_test)
     
     # 8. Evaluation & Metrics
     logger.info("--- Step 6: Final Evaluation ---")
@@ -67,6 +64,7 @@ def main():
     y_pred_optimal = (y_prob_test >= optimal_threshold).astype(int)
     
     final_f2 = fbeta_score(y_test, y_pred_optimal, beta=2)
+    roc_auc = roc_auc_score(y_test, y_prob_test) # Calculate AUC
     report = classification_report(y_test, y_pred_optimal, output_dict=True)
     
     # Log key metrics explicitly
@@ -74,21 +72,37 @@ def main():
     logger.info(f"Final Test Precision: {report['1']['precision']:.4f}")
     logger.info(f"Final Test Recall:    {report['1']['recall']:.4f}")
     logger.info(f"Final Test F2-Score:  {final_f2:.4f}")
+    logger.info(f"Final Test AUC-ROC:   {roc_auc:.4f}")
+    
+    # --- Create Timestamped Output Directory ---
+    run_timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    run_dir = os.path.join("results", f"run_{run_timestamp}")
+    if not os.path.exists(run_dir):
+        os.makedirs(run_dir)
+        
+    # Save Plots
+    logger.info(f"Generating and saving plots to {run_dir}...")
+    visualize.plot_f2_vs_threshold(y_test, y_prob_test, thresholds, f2_scores, optimal_threshold, max_f2, run_dir)
+    visualize.plot_roc_curve(y_test, y_prob_test, run_dir)
+    visualize.plot_precision_recall_curve(y_test, y_prob_test, run_dir)
+    visualize.plot_confusion_matrix(y_test, y_pred_optimal, run_dir)
+    visualize.plot_feature_importance(model, None, run_dir)
     
     # Save Metrics
     metrics = {
         "optimal_threshold": float(optimal_threshold),
         "max_f2_score": float(final_f2),
+        "auc_roc_score": float(roc_auc),
         "classification_report": report
     }
     
-    results_dir = "results"
-    if not os.path.exists(results_dir):
-        os.makedirs(results_dir)
-
-    with open(os.path.join(results_dir, "metrics.json"), "w") as f:
+    with open(os.path.join(run_dir, "metrics.json"), "w") as f:
         json.dump(metrics, f, indent=4)
-    logger.info("Metrics saved to results/metrics.json")
+    logger.info(f"Metrics saved to {run_dir}/metrics.json")
+    
+    # Also save to main results folder for latest access
+    with open(os.path.join("results", "metrics.json"), "w") as f:
+        json.dump(metrics, f, indent=4)
     
     # 9. Prediction on Unlabeled Validation Set
     val_path = config['data'].get('validation_path')
